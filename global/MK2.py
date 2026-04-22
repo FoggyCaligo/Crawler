@@ -13,17 +13,22 @@ page1_elems = {
 
 
 def main():
-  recipe_type_elem = crawler.get_elem_xpath(page1_elems["recipe_type"])
+  crawler.wait(0.1, 0.3)
   recipe_list_elem = crawler.get_elem_xpath(page1_elems["recipe_list"])
-
   recipe_items = recipe_list_elem.find_elements(By.XPATH, "./li")
-
-  for i in range(len(recipe_items)):
-    crawler.wait()
+  for i in range(len(recipe_items)-1):
+    #레시피 클릭
+    crawler.wait(0.1, 0.3)
+    if(crawler.is_ad()):
+      crawler.back()
     crawler.click(crawler.get_elem_xpath(page1_elems["recipe_list"]+f"/li[{i+1}]"))
-    crawler.back(wait_a=0.1, wait_b=0.3)
-    crawler.back(wait_a=0.1, wait_b=0.3)
-    print("back")
+    #뒤로가기
+    crawler.back()
+    if(crawler.is_ad()):
+      crawler.back()
+
+
+    crawler.wait(0.1, 0.3)
 
 
 main()
