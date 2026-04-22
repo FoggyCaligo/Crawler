@@ -19,9 +19,11 @@ def main():
   recipe_items = recipe_list_elem.find_elements(By.XPATH, "./li")
 
   for i in range(len(recipe_items)):
-    crawler.wait(0.1,1)
+    crawler.wait()
     crawler.click(crawler.get_elem_xpath(page1_elems["recipe_list"]+f"/li[{i+1}]"))
-    crawler.back(0.1,1)
+    crawler.back(wait_a=0.1, wait_b=0.3)
+    crawler.back(wait_a=0.1, wait_b=0.3)
+    print("back")
 
 
 main()

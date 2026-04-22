@@ -98,8 +98,8 @@ class Crawler:
         self.driver.get(self.target_url)
 
     def wait(self,a=0.1, b=0.2):
-        a = self.speed['super slow']
-        b = self.speed['super slow']+0.05
+        a = self.speed['super fast']
+        b = self.speed['super fast']+0.05
         # 0.1~1.0 사이의 랜덤 대기 시간
         random_wait = random.uniform(a, b)
         time.sleep(random_wait)
@@ -138,6 +138,8 @@ class Crawler:
             return self.get_element(name).screenshot(f"./resultGraph.png")
 
 
+
+
             
     #main process function
     def main(self):
@@ -148,7 +150,7 @@ class Crawler:
         # self.click(self.page1_elems["recipe_type"]+"/li[{1}]")
         
         for i in range(self.get_element("page1_recipe_list").__sizeof__()):
-            self.wait(0.5,1.0)
+            self.wait(2.0,3.0)
             self.click(self.get_element(self.page1_elems["recipe_list"]+f"/li[{i+1}]"))
             self.wait(0.5,1.0)
             self.back()
