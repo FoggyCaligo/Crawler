@@ -1,4 +1,4 @@
-﻿import Crawler_tool
+import Crawler_tool
 import pandas as pd
 from selenium.webdriver.common.by import By
 
@@ -19,22 +19,25 @@ def _safe_find_text(parent, by, value, default=""):
   except Exception:
     return default
 
-def main():
 
+def main():
   recipe_list_per_page = []
 
   crawler.wait(0.1, 0.3)
-  item_xpath = page1_elems["recipe_list"] + "/li[contains(@class,'common_sp_list_li')]"
   list_url = crawler.target_url
-
   crawler.ensure_list_page(list_url)
-  
-  recipe_items = crawler.get_elem_class("common_sp_list_ul").find_elements(By.XPATH, "./li[contains(@class,'common_sp_list_li')]")
 
+  item_xpath = "./li[contains(@class,'common_sp_list_li')]"
+  recipe_items = crawler.get_elem_class("common_sp_list_ul").find_elements(By.XPATH, item_xpath)
 
-  for recipe_each in recipe_items:
-    recipe_items = crawler.get_elem_class("common_sp_list_ul").find_elements(By.XPATH, "./li[contains(@class,'common_sp_list_li')]")
-    recipe = {}
+  for idx in range(len(recipe_items)):
+    crawler.ensure_list_page(list_url)
+    current_items = crawler.get_elem_class("common_sp_list_ul").find_elements(By.XPATH, item_xpath)
+
+    if idx >= len(current_items):
+      print(f"[MK2] skip index={idx} because current item count is {len(current_items)}")
+      continue
+
     recipe_title_img = None
     recipe_title = ""
     recipe_quantity = ""
@@ -42,33 +45,36 @@ def main():
     recipe_difficulty = ""
     recipe_ingredients = []
     recipe_steps = []
-    
-    #광고 닫기
+
     crawler._close_ad_overlays()
 
-    #타깃 레시피 클릭해서 이동
     list_url = crawler.current_url()
-    clicked = crawler.click(recipe_each)
+    clicked = crawler.click(current_items[idx])
     if not clicked:
-      print(f"[MK2] skip due to click failure")
+      print(f"[MK2] skip index={idx} due to click failure")
       continue
 
-    #광고 닫기
     crawler._close_ad_overlays()
 
-    #레시피 내용 페이지에서 정보 수집
-    # 타이틀 / 인분 / 시간 / 난이도
-    summary_box = crawler.get_elem_class("view2_summary")
-    recipe_title = summary_box.find_element(By.TAG_NAME, "h3").text.strip()
-    recipe_quantity = _safe_find_text(summary_box, By.XPATH, ".//div[contains(@class, 'view2_summary_info')]//span[1]")
-    recipe_time = _safe_find_text(summary_box, By.XPATH, ".//div[contains(@class, 'view2_summary_info')]//span[2]")
-    recipe_difficulty = _safe_find_text(summary_box, By.XPATH, ".//div[contains(@class, 'view2_summary_info')]//span[3]")
+    try:
+      summary_box = crawler.get_elem_class("view2_summary")
+      recipe_title = summary_box.find_element(By.TAG_NAME, "h3").text.strip()
+      recipe_quantity = _safe_find_text(summary_box, By.XPATH, ".//div[contains(@class, 'view2_summary_info')]//span[1]")
+      recipe_time = _safe_find_text(summary_box, By.XPATH, ".//div[contains(@class, 'view2_summary_info')]//span[2]")
+      recipe_difficulty = _safe_find_text(summary_box, By.XPATH, ".//div[contains(@class, 'view2_summary_info')]//span[3]")
 
-    print("title : ", recipe_title)
-    print("quantity : ", recipe_quantity)
-    print("time : ", recipe_time)
-    print("difficulty : ", recipe_difficulty)
-    #재료
+      print("title : ", recipe_title)
+      print("quantity : ", recipe_quantity)
+      print("time : ", recipe_time)
+      print("difficulty : ", recipe_difficulty)
+    except Exception as e:
+      print(f"[WARN] Failed to read summary: {e}")
+      try:
+        crawler.back(fallback_url=list_url)
+      except Exception as back_error:
+        print(f"[WARN] back failed after summary error: {back_error}")
+      continue
+
     try:
       ingredient_list = crawler.get_elem_id("divConfirmedMaterialArea").find_elements(By.XPATH, "./ul/li")
       for each in ingredient_list:
@@ -81,43 +87,49 @@ def main():
         })
       print("ingredients : ", recipe_ingredients, "\n")
     except Exception as e:
+      print(f"[WARN] Failed to read ingredients: {e}")
+      try:
+        crawler.back(fallback_url=list_url)
+      except Exception as back_error:
+        print(f"[WARN] back failed after ingredient error: {back_error}")
       continue
-    #광고 닫기
+
     crawler._close_ad_overlays()
 
-    #조리 과정
     try:
       recipe_list = crawler.get_elem_id('obx_recipe_step_start').find_elements(By.XPATH, "./div")
-      recipe_list = recipe_list[1:] #첫번째 div는 제목이므로 제외
+      recipe_list = recipe_list[1:]
+
       for each in recipe_list:
         try:
           step_description = each.find_element(By.XPATH, "./div[1]").text.strip()
           step_image = each.find_element(By.XPATH, "./div[2]/img").get_attribute("src")
           print("step description : ", step_description)
-          try:
-            print("step image : ", step_image)
-          except Exception as e:
-            print(f"[WARN] Failed to get step image: {e}")
+          print("step image : ", step_image)
           recipe_steps.append({
             "description": step_description,
             "image": step_image,
           })
-        except Exception as e:
+        except Exception:
           break
+
       print("steps : ", recipe_steps, "\n\n")
     except Exception as e:
-      continue  
-    #광고 닫기
+      print(f"[WARN] Failed to read steps: {e}")
+      try:
+        crawler.back(fallback_url=list_url)
+      except Exception as back_error:
+        print(f"[WARN] back failed after step error: {back_error}")
+      continue
+
     crawler._close_ad_overlays()
 
-    # 타이틀 이미지
     try:
       recipe_title_img = crawler.get_elem_id('main_thumbs').get_attribute("src")
     except Exception as e:
       print(f"[WARN] Failed to get title image: {e}")
       recipe_title_img = None
-    # recipe_title_img = crawler.get_elem_id('main_thumbs').get_attribute("src")
-    #레시피 임시 저장
+
     recipe = {
       "img": recipe_title_img,
       "title": recipe_title,
@@ -129,15 +141,18 @@ def main():
     }
     recipe_list_per_page.append(recipe)
 
-    #레시피 페이지로 돌아가기
     try:
       crawler.back(fallback_url=list_url)
     except Exception as e:
       print(f"[WARN] back failed: {e}")
+
     print(f"[MK2] after back url={crawler.current_url()}")
     crawler.dismiss_ads()
     crawler.wait(0.1, 0.3)
+
   print(recipe_list_per_page)
-  pd.DataFrame(recipe_list_per_page).to_csv("recipes2.csv", index=True, encoding='utf-8-sig')
-  
-main()
+  pd.DataFrame(recipe_list_per_page).to_csv("recipes2.csv", index=False, encoding='utf-8-sig')
+
+
+if __name__ == "__main__":
+  main()
