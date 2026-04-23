@@ -1,6 +1,4 @@
 ﻿import Crawler_tool
-import Csv
-import csv
 import pandas as pd
 from selenium.webdriver.common.by import By
 
@@ -35,10 +33,8 @@ def main():
     
     print(f"[MK2] initial loop index={i}, item_count={len(recipe_items)}, url={crawler.current_url()}")
     
-    
     #광고 닫기
     crawler._close_ad_overlays()
-
 
     #타깃 레시피 클릭해서 이동
     list_url = crawler.current_url()
@@ -47,6 +43,7 @@ def main():
       print(f"[MK2] skip index={i} due to click failure")
       continue
 
+    #광고 닫기
     crawler._close_ad_overlays()
 
     #레시피 내용 페이지에서 정보 수집
@@ -71,7 +68,6 @@ def main():
     #조리 과정
     recipe_list = crawler.get_elem_id('obx_recipe_step_start').find_elements(By.XPATH, "./div")
     recipe_list = recipe_list[1:] #첫번째 div는 제목이므로 제외
-
     for each in recipe_list:
       try:
         step_description = each.find_element(By.XPATH, "./div[1]").text.strip()
@@ -89,18 +85,15 @@ def main():
     #광고 닫기
     crawler._close_ad_overlays()
 
-
     # 타이틀 이미지
     recipe_title_img = crawler.get_elem_id('main_thumbs').get_attribute("src")
-
+    #레시피 임시 저장
     recipe = {
       "img": recipe_title_img,
       "title": recipe_title,
       "ingredients": recipe_ingredients,
       "steps": recipe_steps,
     }
-    # print(f"[MK2] collected recipe data: {recipe}")
-
     recipe_list_per_page.append(recipe)
 
     #레시피 페이지로 돌아가기
