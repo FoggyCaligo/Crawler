@@ -15,13 +15,13 @@ from datetime import datetime
 
 
 class Crawler:
-  def __init__(self):
+  def __init__(self,target_url="https://www.10000recipe.com/recipe/list.html"):
     chrome_options = Options()
     # chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     self.driver = webdriver.Chrome(options=chrome_options)
-    self.target_url = "https://www.10000recipe.com/recipe/list.html"
+    self.target_url = target_url
     self.driver.get(self.target_url)
     self.debug = True
 
